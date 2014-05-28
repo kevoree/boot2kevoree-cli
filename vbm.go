@@ -94,13 +94,13 @@ func copyDiskImage(dst, src string) (err error) {
 	return err
 }
 
-// Make a boot2docker VM disk image with the given size (in MB).
+// Make a boot2kevoree VM disk image with the given size (in MB).
 func makeDiskImage(dest string, size uint, initialBytes []byte) error {
 	// Create the dest dir.
 	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
 		return err
 	}
-	// Fill in the magic string so boot2docker VM will detect this and format
+	// Fill in the magic string so boot2kevoree VM will detect this and format
 	// the disk upon first boot.
 	raw := bytes.NewReader(initialBytes)
 	return vbx.MakeDiskImage(dest, size, raw)

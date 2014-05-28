@@ -25,8 +25,11 @@ func run() int {
 		errf("config error: %v\n", err)
 		return 1
 	}
-
 	switch cmd := flags.Arg(0); cmd {
+	case "editor":
+		return cmdEditor()
+	case "gui":
+		return cmdGui()
 	case "download":
 		return cmdDownload()
 	case "config", "cfg":

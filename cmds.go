@@ -17,12 +17,27 @@ import (
 	vbx "github.com/boot2docker/boot2docker-cli/virtualbox"
 )
 
-// Initialize the boot2docker VM from scratch.
+// Initialize the boot2kevoree VM from scratch.
 func cmdInit() int {
 	// TODO(@riobard) break up this command into multiple stages
 	m, err := vbx.GetMachine(B2D.VM)
 	if err == nil {
 		logf("Virtual machine %s already exists", B2D.VM)
+		return 1
+	}
+
+	if ping(fmt.Sprintf("localhost:%d", B2D.WebGuiPort)) {
+		logf("--kevguiport=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
+		return 1
+	}
+
+	if ping(fmt.Sprintf("localhost:%d", B2D.GroupPort)) {
+		logf("--kevgroup=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
+		return 1
+	}
+
+	if ping(fmt.Sprintf("localhost:%d", B2D.EditorPort)) {
+		logf("--keveditorport=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
 		return 1
 	}
 
@@ -101,6 +116,9 @@ func cmdInit() int {
 	pfRules := map[string]vbx.PFRule{
 		"ssh":    vbx.PFRule{Proto: vbx.PFTCP, HostIP: net.ParseIP("127.0.0.1"), HostPort: B2D.SSHPort, GuestPort: 22},
 		"docker": vbx.PFRule{Proto: vbx.PFTCP, HostIP: net.ParseIP("127.0.0.1"), HostPort: B2D.DockerPort, GuestPort: 4243},
+		"kevguiport": vbx.PFRule{Proto: vbx.PFTCP, HostIP: net.ParseIP("127.0.0.1"), HostPort: B2D.WebGuiPort, GuestPort: 8080},
+		"kevgroup": vbx.PFRule{Proto: vbx.PFTCP, HostIP: net.ParseIP("127.0.0.1"), HostPort: B2D.GroupPort, GuestPort: 9000},
+		"keveditor": vbx.PFRule{Proto: vbx.PFTCP, HostIP: net.ParseIP("127.0.0.1"), HostPort: B2D.EditorPort, GuestPort: 3042},
 	}
 
 	for name, rule := range pfRules {
@@ -149,7 +167,7 @@ func cmdInit() int {
 				return 1
 			}
 		} else {
-			magicString := "boot2docker, please format-me"
+			magicString := "boot2kevoree, please format-me"
 
 			buf := new(bytes.Buffer)
 			tw := tar.NewWriter(buf)
@@ -236,8 +254,9 @@ func cmdUp() int {
 	default:
 		// Check if $DOCKER_HOST ENV var is properly configured.
 		if os.Getenv("DOCKER_HOST") != fmt.Sprintf("tcp://localhost:%d", B2D.DockerPort) {
-			logf("To connect the Docker client to the Docker daemon, please set:")
-			logf("    export DOCKER_HOST=tcp://localhost:%d", B2D.DockerPort)
+			logf("To connect the Web GUI, browse to http://localhost:8080/")
+			logf("To connect the Group use localhost:9000 in the editor")
+			logf("To open the editor browse to http://localhost:3042/?host=localhost&port=9000 in the editor")
 		}
 	}
 	return 0
@@ -245,13 +264,13 @@ func cmdUp() int {
 
 // Tell the user the config (and later let them set it?)
 func cmdConfig() int {
-	dir, err := getCfgDir(".boot2docker")
+	dir, err := getCfgDir(".boot2kevoree")
 	if err != nil {
 		logf("Error working out Profile file location: %s", err)
 		return 1
 	}
 	filename := getCfgFilename(dir)
-	logf("boot2docker profile filename: %s", filename)
+	logf("boot2kevoree profile filename: %s", filename)
 	fmt.Println(printConfig())
 	return 0
 }
@@ -370,7 +389,7 @@ func cmdStatus() int {
 	return 0
 }
 
-// Call the external SSH command to login into boot2docker VM.
+// Call the external SSH command to login into boot2kevoree VM.
 func cmdSSH() int {
 	m, err := vbx.GetMachine(B2D.VM)
 	if err != nil {
@@ -396,7 +415,7 @@ func cmdSSH() int {
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-p", fmt.Sprintf("%d", B2D.SSHPort),
 		"-i", B2D.SSHKey,
-		"docker@localhost",
+		"kevoree@localhost",
 		strings.Join(os.Args[i:], " "),
 	); err != nil {
 		logf("%s", err)
@@ -405,10 +424,10 @@ func cmdSSH() int {
 	return 0
 }
 
-// Download the boot2docker ISO image.
+// Download the boot2kevoree ISO image.
 func cmdDownload() int {
-	logf("Downloading boot2docker ISO image...")
-	url := "https://api.github.com/repos/boot2docker/boot2docker/releases"
+	logf("Downloading boot2kevoree ISO image...")
+	url := "https://api.github.com/repos/kevoree/boot2kevoree/releases"
 	tag, err := getLatestReleaseName(url)
 	if err != nil {
 		logf("Failed to get latest release: %s", err)
@@ -416,11 +435,21 @@ func cmdDownload() int {
 	}
 	logf("Latest release is %s", tag)
 
-	url = fmt.Sprintf("https://github.com/boot2docker/boot2docker/releases/download/%s/boot2docker.iso", tag)
+	url = fmt.Sprintf("https://github.com/kevoree/boot2kevoree/releases/download/%s/boot2kevoree.iso", tag)
 	if err := download(B2D.ISO, url); err != nil {
 		logf("Failed to download ISO image: %s", err)
 		return 1
 	}
 	logf("Success: downloaded %s\n\tto %s", url, B2D.ISO)
+	return 0
+}
+
+func cmdEditor() int {
+	Open("http://localhost:3042/?port=9000&host=localhost")
+	return 0
+}
+
+func cmdGui() int {
+	Open("http://localhost:8080/")
 	return 0
 }
