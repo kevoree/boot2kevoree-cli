@@ -27,17 +27,17 @@ func cmdInit() int {
 	}
 
 	if ping(fmt.Sprintf("localhost:%d", B2D.WebGuiPort)) {
-		logf("--kevguiport=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
+		logf("--kevguiport=%d on localhost is occupied. Please choose another one.", B2D.WebGuiPort)
 		return 1
 	}
 
 	if ping(fmt.Sprintf("localhost:%d", B2D.GroupPort)) {
-		logf("--kevgroup=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
+		logf("--kevgroup=%d on localhost is occupied. Please choose another one.", B2D.GroupPort)
 		return 1
 	}
 
 	if ping(fmt.Sprintf("localhost:%d", B2D.EditorPort)) {
-		logf("--keveditorport=%d on localhost is occupied. Please choose another one.", B2D.DockerPort)
+		logf("--keveditorport=%d on localhost is occupied. Please choose another one.", B2D.EditorPort)
 		return 1
 	}
 
